@@ -350,13 +350,18 @@ function delayPromise(ms) {
 
 function start() {
   // Start the animation loop, targets 60 frames/s
+  stopReplay();
   startBluetooth();
-  requestId = requestAnimationFrame(animationLoop);
+  if (!requestId) {
+    requestId = requestAnimationFrame(animationLoop);
+  }
 }
 
 function stop() {
+  stopReplay();
   if (requestId) {
     cancelAnimationFrame(requestId);
+    requestId = null;
   }
   if (targetDevice == null) {
     console.log('The target device is null.');
@@ -489,7 +494,7 @@ function bitStringToSignedInt(binStr) {
 function saveToFile() {
   var file;
   var properties = { type: 'application/json' }; // Specify the file's mime-type.
-  var myObj = { accX: xAcc, accY: yAcc, accZ: zAcc, gyrX: xGyro, gyrY: yGyro, gyrZ: xGyro };
+  var myObj = { accX: xAcc, accY: yAcc, accZ: zAcc, gyrX: xGyro, gyrY: yGyro, gyrZ: zGyro };
   var myJSON = JSON.stringify(myObj);
   try {
     // Specify the filename using the File constructor, but ...
@@ -502,4 +507,86 @@ function saveToFile() {
   a.href = window.URL.createObjectURL(file);
   a.download = "6DOF.json";
   a.click();
+}
+
+// Replay of a saved 6DOF.json file
+var replayTimer = null;
+var replayIndex = 0;
+var replayData = null;
+const REPLAY_SAMPLE_PERIOD = 1000 / 52; // ms, loops at the recorded sample rate of 52 Hz
+
+function loadFromFile(input) {
+  var file = input.files[0];
+  if (!file) {
+    console.log('No file selected.');
+    return;
+  }
+  var reader = new FileReader();
+  reader.onload = function (event) {
+    try {
+      replayData = JSON.parse(event.target.result);
+    } catch (e) {
+      console.log('Could not parse the file as JSON: ' + e);
+      return;
+    }
+    replayIndex = 0;
+    console.log('Loaded ' + file.name + ', looping the samples at 52 Hz');
+    startReplay();
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+function startReplay() {
+  stopReplay();
+  replayTimer = setInterval(replayStep, REPLAY_SAMPLE_PERIOD);
+  if (!requestId) {
+    requestId = requestAnimationFrame(animationLoop);
+  }
+}
+
+function stopReplay() {
+  if (replayTimer) {
+    clearInterval(replayTimer);
+    replayTimer = null;
+  }
+}
+
+function replayStep() {
+  if (!replayData || !replayData.accX || !replayData.gyrX) {
+    stopReplay();
+    return;
+  }
+  var length = Math.min(
+    replayData.accX.length, replayData.accY.length, replayData.accZ.length,
+    replayData.gyrX.length, replayData.gyrY.length, replayData.gyrZ.length
+  );
+  if (length === 0) {
+    stopReplay();
+    return;
+  }
+  var i = replayIndex % length;
+
+  // The saved arrays hold the drawing-adjusted values, invert the adjustments
+  // (acc: 100 + raw * 8, gyro: 100 + raw / 100) to get the raw sensor values back
+  var accXRaw = (replayData.accX[i] - 100) / 8;
+  var accYRaw = (replayData.accY[i] - 100) / 8;
+  var accZRaw = (replayData.accZ[i] - 100) / 8;
+  var gyrXRaw = (replayData.gyrX[i] - 100) * 100;
+  var gyrYRaw = (replayData.gyrY[i] - 100) * 100;
+  var gyrZRaw = (replayData.gyrZ[i] - 100) * 100;
+
+  var accDataPoint = new DataPoint(replayIndex, 'acceleration', { x: accXRaw, y: accYRaw, z: accZRaw });
+  var gyroDataPoint = new DataPoint(replayIndex, 'gyro', { x: gyrXRaw, y: gyrYRaw, z: gyrZRaw });
+
+  // Update the drawing arrays the same way uppdateAcc and uppdateGyro do
+  xAcc.shift(); xAcc.push(replayData.accX[i]);
+  yAcc.shift(); yAcc.push(replayData.accY[i]);
+  zAcc.shift(); zAcc.push(replayData.accZ[i]);
+  xGyro.shift(); xGyro.push(replayData.gyrX[i]);
+  yGyro.shift(); yGyro.push(replayData.gyrY[i]);
+  zGyro.shift(); zGyro.push(replayData.gyrZ[i]);
+
+  filter(accDataPoint, gyroDataPoint);
+  replayIndex++;
 }

@@ -6,7 +6,7 @@ Web-based lab that streams accelerometer and gyroscope data from a **Polar Verit
 
 | File | Description |
 |------|-------------|
-| `HTML5_PolarVeritySense_HT25.html` | Main application page (canvas plots, start/stop/save buttons) |
+| `HTML5_PolarVeritySense.html` | Main application page (canvas plots, start/stop/save buttons) |
 | `polar.js` | Polar Verity Sense SDK: Web Bluetooth connection, PMD control, streaming |
 | `filter.js` | Filtering and sensor-fusion tasks (1A cadence, 1B roll, etc.) |
 
@@ -20,13 +20,13 @@ The full lab assignment is available here: [Assignment 4 CM2024 HT26.pdf](Assign
 
 The app is published via GitHub Pages:
 
-**https://jonaswillen.github.io/Lab4_CM2022/HTML5_PolarVeritySense_HT25.html**
+**https://jonaswillen.github.io/Lab4_CM2022/HTML5_PolarVeritySense.html**
 
 > Web Bluetooth requires a **secure context (HTTPS)**, which GitHub Pages provides — this is why the app works when hosted on GitHub Pages but not when opened directly from a local file.
 
 ### Locally
 
-Because of the Web Bluetooth HTTPS requirement, serve the files over HTTPS or use a local HTTPS server, then open `HTML5_PolarVeritySense_HT25.html` in your browser.
+Because of the Web Bluetooth HTTPS requirement, serve the files over HTTPS or use a local HTTPS server, then open `HTML5_PolarVeritySense.html` in your browser.
 
 ## Browser support
 

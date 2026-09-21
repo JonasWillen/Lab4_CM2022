@@ -3,6 +3,7 @@
 
 <head>
   <title>HTML5 Sensor Fusion </title>
+  <link rel="icon" href="data:,">
   <style type="text/css">
     canvas {
       border: 1px solid black;
@@ -20,8 +21,13 @@
   <p>
     <button onclick="start()">Start sensor</button>
     <button onclick="stop()">Stop sensor</button>
-    <button onclick="saveToFile()">Save to file</button>
+    <button onclick="startRecording()">Start Record</button>
+    <button onclick="stopRecording()">Stop Record</button>
+    <button onclick="document.getElementById('6dofFileInput').click();">Load 6DOF file</button>
+    <input type="file" id="6dofFileInput" accept=".json,application/json" style="display:none" onchange="loadFromFile(this)">
   </p>
+
+  <p style="font-size: 10px; color: gray; margin-top: 20px;">Version 0.01</p>
 
   <script src="polar.js"></script>
   <script src="filter.js"></script>

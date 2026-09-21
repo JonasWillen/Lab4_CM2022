@@ -22,6 +22,8 @@
     <button onclick="start()">Start sensor</button>
     <button onclick="stop()">Stop sensor</button>
     <button onclick="saveToFile()">Save to file</button>
+    <button onclick="document.getElementById('6dofFileInput').click();">Load 6DOF file</button>
+    <input type="file" id="6dofFileInput" accept=".json,application/json" style="display:none" onchange="loadFromFile(this)">
   </p>
 
   <script src="polar.js"></script>

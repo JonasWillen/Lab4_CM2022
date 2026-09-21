@@ -6,7 +6,7 @@ Web-based lab that streams accelerometer and gyroscope data from a **Polar Verit
 
 | File | Description |
 |------|-------------|
-| `HTML5_PolarVeritySense.html` | Main application page (canvas plots, start/stop/save buttons) |
+| `HTML5_PolarVeritySense.html` | Main application page (canvas plots, start/stop/save/load buttons) |
 | `polar.js` | Polar Verity Sense SDK: Web Bluetooth connection, PMD control, streaming |
 | `filter.js` | Filtering and sensor-fusion tasks (1A cadence, 1B roll, etc.) |
 
@@ -27,6 +27,10 @@ The app is published via GitHub Pages:
 ### Locally
 
 Because of the Web Bluetooth HTTPS requirement, serve the files over HTTPS or use a local HTTPS server, then open `HTML5_PolarVeritySense.html` in your browser.
+
+## Replay a saved recording
+
+After saving a recording with **Save to file** (produces `6DOF.json`), click **Load 6DOF file** to replay it. The replay loops the recording through the same filtering pipeline (`filter()`) at the recorded sample rate of 52 Hz, updating the canvas plots just like live sensor data. Use **Stop sensor** to pause the replay.
 
 ## Browser support
 

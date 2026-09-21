@@ -130,6 +130,11 @@ function uppdateAcc(xAccNew, yAccNew, zAccNew, timestamp) {
   yAcc.push(adjustY);
   zAcc.shift();
   zAcc.push(adjustZ);
+  if (recording) {
+    recAccX.push(adjustX);
+    recAccY.push(adjustY);
+    recAccZ.push(adjustZ);
+  }
 }
 
 function uppdateGyro(xGyroNew, yGyroNew, zGyroNew, timestamp) {
@@ -147,6 +152,11 @@ function uppdateGyro(xGyroNew, yGyroNew, zGyroNew, timestamp) {
   yGyro.push(adjustY);
   zGyro.shift();
   zGyro.push(adjustZ);
+  if (recording) {
+    recGyrX.push(adjustX);
+    recGyrY.push(adjustY);
+    recGyrZ.push(adjustZ);
+  }
 }
 
 function updateGyro(value) {
@@ -491,10 +501,44 @@ function bitStringToSignedInt(binStr) {
   return parseInt(binStr[0] === "1" ? binStr.padStart(32, "1") : binStr.padStart(32, "0"), 2) >> 0;
 }
 
+// Recording of all data between Start Record and Stop Record
+var recording = false;
+var recAccX = [];
+var recAccY = [];
+var recAccZ = [];
+var recGyrX = [];
+var recGyrY = [];
+var recGyrZ = [];
+
+function startRecording() {
+  recAccX = [];
+  recAccY = [];
+  recAccZ = [];
+  recGyrX = [];
+  recGyrY = [];
+  recGyrZ = [];
+  recording = true;
+  console.log('Recording started');
+}
+
+function stopRecording() {
+  if (!recording) {
+    console.log('Not recording.');
+    return;
+  }
+  recording = false;
+  console.log('Recording stopped, ' + recAccX.length + ' acceleration samples and ' + recGyrX.length + ' gyro samples');
+  if (recAccX.length === 0 && recGyrX.length === 0) {
+    console.log('No data recorded.');
+    return;
+  }
+  saveToFile();
+}
+
 function saveToFile() {
   var file;
   var properties = { type: 'application/json' }; // Specify the file's mime-type.
-  var myObj = { accX: xAcc, accY: yAcc, accZ: zAcc, gyrX: xGyro, gyrY: yGyro, gyrZ: zGyro };
+  var myObj = { accX: recAccX, accY: recAccY, accZ: recAccZ, gyrX: recGyrX, gyrY: recGyrY, gyrZ: recGyrZ };
   var myJSON = JSON.stringify(myObj);
   try {
     // Specify the filename using the File constructor, but ...

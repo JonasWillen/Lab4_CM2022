@@ -32,6 +32,14 @@ Because of the Web Bluetooth HTTPS requirement, serve the files over HTTPS or us
 
 Click **Start Record** to capture all incoming sensor data, then **Stop Record** to stop and automatically save the full recording as `6DOF.json`. The replay loops the recording through the same filtering pipeline (`filter()`) at the recorded sample rate of 52 Hz, updating the canvas plots just like live sensor data. Use **Stop sensor** to pause the replay.
 
+## Versioning
+
+The app displays a small version number (e.g. `Version 0.01`) at the bottom of the page. Every merge to `main` bumps the version — the number shown on the [GitHub Pages site](https://jonaswillen.github.io/Lab4_CM2022/HTML5_PolarVeritySense.html) tells you whether the latest deployment is live.
+
+| Version | Description |
+|---------|-------------|
+| 0.01 | Start/Stop Record, full-length `6DOF.json` save, 52 Hz looping replay |
+
 ## Browser support
 
 Web Bluetooth is required. Supported in Chrome, Edge, and Opera on desktop, and Chrome on Android (see [caniuse.com/web-bluetooth](https://caniuse.com/web-bluetooth)). Not supported in Firefox or Safari.

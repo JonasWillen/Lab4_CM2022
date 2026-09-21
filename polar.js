@@ -489,7 +489,7 @@ function bitStringToSignedInt(binStr) {
 function saveToFile() {
   var file;
   var properties = { type: 'application/json' }; // Specify the file's mime-type.
-  var myObj = { accX: xAcc, accY: yAcc, accZ: zAcc, magX: xGyro, magY: yGyro, magZ: xGyro };
+  var myObj = { accX: xAcc, accY: yAcc, accZ: zAcc, gyrX: xGyro, gyrY: yGyro, gyrZ: xGyro };
   var myJSON = JSON.stringify(myObj);
   try {
     // Specify the filename using the File constructor, but ...

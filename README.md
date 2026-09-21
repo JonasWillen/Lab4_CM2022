@@ -32,7 +32,7 @@ Because of the Web Bluetooth HTTPS requirement, serve the files over HTTPS or us
 
 Click **Start Record** to capture all incoming sensor data, then **Stop Record** to stop and automatically save the full recording as `6DOF.json`. The replay loops the recording through the same filtering pipeline (`filter()`) at the recorded sample rate of 52 Hz, updating the canvas plots just like live sensor data. Use **Stop sensor** to pause the replay.
 
-**SensorLogger exports** are also supported: the same button accepts a `SensorLogger.json` file (iOS/Android SensorLogger app). It is converted automatically — accelerometer (m/s²) is used as-is and gyroscope (rad/s) is converted to deg/s to match the Polar stream — and then loops at 52 Hz the same way.
+**SensorLogger exports** are also supported: the same button accepts a `SensorLogger.json` file (iOS/Android SensorLogger app). It is converted automatically — accelerometer (m/s²) is used as-is and gyroscope (rad/s) is converted to deg/s to match the Polar stream. The replay then matches the recording's own native sample rate, so it loops at the same speed the data was captured.
 
 ## Versioning
 

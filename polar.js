@@ -558,6 +558,7 @@ var replayTimer = null;
 var replayIndex = 0;
 var replayData = null;
 const REPLAY_SAMPLE_PERIOD = 1000 / 52; // ms, loops at the recorded sample rate of 52 Hz
+var replaySamplePeriod = REPLAY_SAMPLE_PERIOD;
 
 function loadFromFile(input) {
   var file = input.files[0];
@@ -585,8 +586,9 @@ function loadFromFile(input) {
       console.log('Unrecognized file format. Expected a 6DOF.json or SensorLogger.json recording.');
       return;
     }
+    replaySamplePeriod = replayData.samplePeriod || REPLAY_SAMPLE_PERIOD;
     replayIndex = 0;
-    console.log('Loaded ' + file.name + ', looping the samples at 52 Hz');
+    console.log('Loaded ' + file.name + ', looping the samples at ' + (1000 / replaySamplePeriod).toFixed(1) + ' Hz');
     startReplay();
   };
   reader.readAsText(file);
@@ -624,13 +626,27 @@ function convertSensorLogger(entries) {
     converted.gyrY.push(100 + (parseFloat(gyroEntries[i].y) * 180 / Math.PI) / 100);
     converted.gyrZ.push(100 + (parseFloat(gyroEntries[i].z) * 180 / Math.PI) / 100);
   }
-  console.log('SensorLogger recording: ' + length + ' sample pairs');
+  // Detect the native sample rate from the recording so the replay matches
+  // the speed the data was captured at
+  var elapsed = [];
+  for (var j = 0; j < accEntries.length; j++) {
+    elapsed.push(parseFloat(accEntries[j].seconds_elapsed));
+  }
+  var meanPeriodMs = REPLAY_SAMPLE_PERIOD;
+  if (elapsed.length > 1 && elapsed[elapsed.length - 1] > elapsed[0]) {
+    meanPeriodMs = (elapsed[elapsed.length - 1] - elapsed[0]) / (elapsed.length - 1) * 1000;
+  }
+  if (isFinite(meanPeriodMs) && meanPeriodMs > 0) {
+    converted.samplePeriod = meanPeriodMs;
+  }
+  console.log('SensorLogger recording: ' + length + ' sample pairs' +
+    (converted.samplePeriod ? ' at ' + (1000 / converted.samplePeriod).toFixed(1) + ' Hz' : ''));
   return converted;
 }
 
 function startReplay() {
   stopReplay();
-  replayTimer = setInterval(replayStep, REPLAY_SAMPLE_PERIOD);
+  replayTimer = setInterval(replayStep, replaySamplePeriod);
   if (!requestId) {
     requestId = requestAnimationFrame(animationLoop);
   }

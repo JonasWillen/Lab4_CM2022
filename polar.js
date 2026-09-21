@@ -567,10 +567,22 @@ function loadFromFile(input) {
   }
   var reader = new FileReader();
   reader.onload = function (event) {
+    var parsed;
     try {
-      replayData = JSON.parse(event.target.result);
+      parsed = JSON.parse(event.target.result);
     } catch (e) {
       console.log('Could not parse the file as JSON: ' + e);
+      return;
+    }
+    if (Array.isArray(parsed)) {
+      replayData = convertSensorLogger(parsed);
+      if (!replayData) {
+        return;
+      }
+    } else if (parsed && parsed.accX && parsed.gyrX) {
+      replayData = parsed;
+    } else {
+      console.log('Unrecognized file format. Expected a 6DOF.json or SensorLogger.json recording.');
       return;
     }
     replayIndex = 0;
@@ -579,6 +591,41 @@ function loadFromFile(input) {
   };
   reader.readAsText(file);
   input.value = '';
+}
+
+// Converts a SensorLogger app export (a JSON array of x/y/z/sensor/seconds_elapsed
+// entries) into the replay format, using the calibrated sensors when present.
+// Accelerometer is in m/s^2 and gyroscope in rad/s; the gyroscope values are
+// converted to deg/s to match the Polar stream, then the drawing adjustments
+// (acc: 100 + raw * 8, gyro: 100 + raw / 100) are applied.
+function convertSensorLogger(entries) {
+  var accEntries = entries.filter(function (e) { return e.sensor === 'Accelerometer'; });
+  var gyroEntries = entries.filter(function (e) { return e.sensor === 'Gyroscope'; });
+  if (accEntries.length === 0) {
+    accEntries = entries.filter(function (e) { return e.sensor === 'AccelerometerUncalibrated'; });
+  }
+  if (gyroEntries.length === 0) {
+    gyroEntries = entries.filter(function (e) { return e.sensor === 'GyroscopeUncalibrated'; });
+  }
+  if (accEntries.length === 0 || gyroEntries.length === 0) {
+    console.log('The SensorLogger file contains no accelerometer and gyroscope samples.');
+    return null;
+  }
+  var byElapsed = function (a, b) { return parseFloat(a.seconds_elapsed) - parseFloat(b.seconds_elapsed); };
+  accEntries.sort(byElapsed);
+  gyroEntries.sort(byElapsed);
+  var length = Math.min(accEntries.length, gyroEntries.length);
+  var converted = { accX: [], accY: [], accZ: [], gyrX: [], gyrY: [], gyrZ: [] };
+  for (var i = 0; i < length; i++) {
+    converted.accX.push(100 + parseFloat(accEntries[i].x) * 8);
+    converted.accY.push(100 + parseFloat(accEntries[i].y) * 8);
+    converted.accZ.push(100 + parseFloat(accEntries[i].z) * 8);
+    converted.gyrX.push(100 + (parseFloat(gyroEntries[i].x) * 180 / Math.PI) / 100);
+    converted.gyrY.push(100 + (parseFloat(gyroEntries[i].y) * 180 / Math.PI) / 100);
+    converted.gyrZ.push(100 + (parseFloat(gyroEntries[i].z) * 180 / Math.PI) / 100);
+  }
+  console.log('SensorLogger recording: ' + length + ' sample pairs');
+  return converted;
 }
 
 function startReplay() {

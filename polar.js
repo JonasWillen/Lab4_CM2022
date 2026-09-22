@@ -558,6 +558,7 @@ var replayTimer = null;
 var replayIndex = 0;
 var replayData = null;
 const REPLAY_SAMPLE_PERIOD = 1000 / 52; // ms, loops at the recorded sample rate of 52 Hz
+var replaySamplePeriod = REPLAY_SAMPLE_PERIOD;
 
 function loadFromFile(input) {
   var file = input.files[0];
@@ -567,23 +568,85 @@ function loadFromFile(input) {
   }
   var reader = new FileReader();
   reader.onload = function (event) {
+    var parsed;
     try {
-      replayData = JSON.parse(event.target.result);
+      parsed = JSON.parse(event.target.result);
     } catch (e) {
       console.log('Could not parse the file as JSON: ' + e);
       return;
     }
+    if (Array.isArray(parsed)) {
+      replayData = convertSensorLogger(parsed);
+      if (!replayData) {
+        return;
+      }
+    } else if (parsed && parsed.accX && parsed.gyrX) {
+      replayData = parsed;
+    } else {
+      console.log('Unrecognized file format. Expected a 6DOF.json or SensorLogger.json recording.');
+      return;
+    }
+    replaySamplePeriod = replayData.samplePeriod || REPLAY_SAMPLE_PERIOD;
     replayIndex = 0;
-    console.log('Loaded ' + file.name + ', looping the samples at 52 Hz');
+    console.log('Loaded ' + file.name + ', looping the samples at ' + (1000 / replaySamplePeriod).toFixed(1) + ' Hz');
     startReplay();
   };
   reader.readAsText(file);
   input.value = '';
 }
 
+// Converts a SensorLogger app export (a JSON array of x/y/z/sensor/seconds_elapsed
+// entries) into the replay format, using the calibrated sensors when present.
+// Accelerometer is in m/s^2 and gyroscope in rad/s; the gyroscope values are
+// converted to deg/s to match the Polar stream, then the drawing adjustments
+// (acc: 100 + raw * 8, gyro: 100 + raw / 100) are applied.
+function convertSensorLogger(entries) {
+  var accEntries = entries.filter(function (e) { return e.sensor === 'Accelerometer'; });
+  var gyroEntries = entries.filter(function (e) { return e.sensor === 'Gyroscope'; });
+  if (accEntries.length === 0) {
+    accEntries = entries.filter(function (e) { return e.sensor === 'AccelerometerUncalibrated'; });
+  }
+  if (gyroEntries.length === 0) {
+    gyroEntries = entries.filter(function (e) { return e.sensor === 'GyroscopeUncalibrated'; });
+  }
+  if (accEntries.length === 0 || gyroEntries.length === 0) {
+    console.log('The SensorLogger file contains no accelerometer and gyroscope samples.');
+    return null;
+  }
+  var byElapsed = function (a, b) { return parseFloat(a.seconds_elapsed) - parseFloat(b.seconds_elapsed); };
+  accEntries.sort(byElapsed);
+  gyroEntries.sort(byElapsed);
+  var length = Math.min(accEntries.length, gyroEntries.length);
+  var converted = { accX: [], accY: [], accZ: [], gyrX: [], gyrY: [], gyrZ: [] };
+  for (var i = 0; i < length; i++) {
+    converted.accX.push(100 + parseFloat(accEntries[i].x) * 8);
+    converted.accY.push(100 + parseFloat(accEntries[i].y) * 8);
+    converted.accZ.push(100 + parseFloat(accEntries[i].z) * 8);
+    converted.gyrX.push(100 + (parseFloat(gyroEntries[i].x) * 180 / Math.PI) / 100);
+    converted.gyrY.push(100 + (parseFloat(gyroEntries[i].y) * 180 / Math.PI) / 100);
+    converted.gyrZ.push(100 + (parseFloat(gyroEntries[i].z) * 180 / Math.PI) / 100);
+  }
+  // Detect the native sample rate from the recording so the replay matches
+  // the speed the data was captured at
+  var elapsed = [];
+  for (var j = 0; j < accEntries.length; j++) {
+    elapsed.push(parseFloat(accEntries[j].seconds_elapsed));
+  }
+  var meanPeriodMs = REPLAY_SAMPLE_PERIOD;
+  if (elapsed.length > 1 && elapsed[elapsed.length - 1] > elapsed[0]) {
+    meanPeriodMs = (elapsed[elapsed.length - 1] - elapsed[0]) / (elapsed.length - 1) * 1000;
+  }
+  if (isFinite(meanPeriodMs) && meanPeriodMs > 0) {
+    converted.samplePeriod = meanPeriodMs;
+  }
+  console.log('SensorLogger recording: ' + length + ' sample pairs' +
+    (converted.samplePeriod ? ' at ' + (1000 / converted.samplePeriod).toFixed(1) + ' Hz' : ''));
+  return converted;
+}
+
 function startReplay() {
   stopReplay();
-  replayTimer = setInterval(replayStep, REPLAY_SAMPLE_PERIOD);
+  replayTimer = setInterval(replayStep, replaySamplePeriod);
   if (!requestId) {
     requestId = requestAnimationFrame(animationLoop);
   }

@@ -32,12 +32,15 @@ Because of the Web Bluetooth HTTPS requirement, serve the files over HTTPS or us
 
 Click **Start Record** to capture all incoming sensor data, then **Stop Record** to stop and automatically save the full recording as `6DOF.json`. The replay loops the recording through the same filtering pipeline (`filter()`) at the recorded sample rate of 52 Hz, updating the canvas plots just like live sensor data. Use **Stop sensor** to pause the replay.
 
+**SensorLogger exports** are also supported: the same button accepts a `SensorLogger.json` file (iOS/Android SensorLogger app). It is converted automatically — accelerometer (m/s²) is used as-is and gyroscope (rad/s) is converted to deg/s to match the Polar stream. The replay then matches the recording's own native sample rate, so it loops at the same speed the data was captured.
+
 ## Versioning
 
 The app displays a small version number (e.g. `Version 0.01`) at the bottom of the page. Every merge to `main` bumps the version — the number shown on the [GitHub Pages site](https://jonaswillen.github.io/Lab4_CM2022/HTML5_PolarVeritySense.html) tells you whether the latest deployment is live.
 
 | Version | Description |
 |---------|-------------|
+| 0.02 | Load and replay `SensorLogger.json` recordings (acc m/s², gyro rad/s → deg/s) |
 | 0.01 | Start/Stop Record, full-length `6DOF.json` save, 52 Hz looping replay |
 
 ## Browser support
